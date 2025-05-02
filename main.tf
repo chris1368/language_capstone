@@ -64,7 +64,12 @@ resource "aws_route_table" "second_rt" {
 
 # Associate Public Subnets with the Second Route Table
 
-resource "aws_route_table_association" "public_subnet_asso" {
+resource "aws_route_table_association" "public_subnet_asso1" {
+  subnet_id      = aws_subnet.wordpress-vpc.id
+  route_table_id = aws_route_table.second_rt.id
+}
+
+resource "aws_route_table_association" "public_subnet_asso2" {
   gateway_id     = aws_internet_gateway.gw.id
   route_table_id = aws_route_table.second_rt.id
 }
