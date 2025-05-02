@@ -101,3 +101,36 @@ resource "aws_security_group" "allow_ssh" {
     Name = "allow_ssh"
   }
 }
+
+
+#For creating new key pair for ssh into EC2 machine - check?
+# Generate new private key 
+resource "tls_private_key" "my_key" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+# Generate a key-pair with above key
+resource "aws_key_pair" "deployer" {
+  key_name   = "task3-key"
+  public_key = tls_private_key.my_key.public_key_openssh
+}
+
+# Saving Key Pair
+resource "null_resource" "save_key_pair"  {
+	provisioner "local-exec" {
+	    command = "echo  ${tls_private_key.my_key.private_key_pem} > mykey.pem"
+  	}
+}
+
+
+#EC2
+resource "aws_instance" "wordpress_server" {
+  ami                         = "ami-0dd574ef87b79ac6c"
+  instance_type               = "t3.nano"
+  key_name                    = "mykey.pem"
+  subnet_id                   = aws_subnet.wordpress-vpc.id
+  security_groups             = [aws_security_group.allow_ssh.id]
+  associate_public_ip_address = true
+
+}
