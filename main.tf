@@ -102,7 +102,7 @@ resource "aws_security_group" "allow_ssh" {
   }
 }
 
-
+/*
 #For creating new key pair for ssh into EC2 machine - check?
 # Generate new private key 
 resource "tls_private_key" "my_key" {
@@ -122,13 +122,13 @@ resource "null_resource" "save_key_pair"  {
 	    command = "echo  ${tls_private_key.my_key.private_key_pem} > mykey.pem"
   	}
 }
-
+*/
 
 #EC2
 resource "aws_instance" "wordpress_server" {
   ami                         = "ami-0dd574ef87b79ac6c"
   instance_type               = "t3.nano"
-  key_name                    = aws_key_pair.deployer.key_name
+  key_name                    = vockey1 #aws_key_pair.deployer.key_name
   subnet_id                   = aws_subnet.wordpress-vpc.id
   security_groups             = [aws_security_group.allow_ssh.id]
   associate_public_ip_address = true
