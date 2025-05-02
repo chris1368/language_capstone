@@ -128,7 +128,7 @@ resource "null_resource" "save_key_pair"  {
 resource "aws_instance" "wordpress_server" {
   ami                         = "ami-0dd574ef87b79ac6c"
   instance_type               = "t3.nano"
-  key_name                    = "mykey.pem"
+  key_name                    = aws_key_pair.deployer.task3-key
   subnet_id                   = aws_subnet.wordpress-vpc.id
   security_groups             = [aws_security_group.allow_ssh.id]
   associate_public_ip_address = true
