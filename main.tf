@@ -172,3 +172,27 @@ resource "aws_security_group" "allow_ssh" {
     Name = "allow_ssh"
   }
 }
+
+
+#EC2
+resource "aws_instance" "wordpress" {
+  ami                         = "ami-0dd574ef87b79ac6c"
+  instance_type               = "t3.nano"
+  key_name                    = "vockey1" #aws_key_pair.deployer.key_name
+  subnet_id                   = aws_subnet.wordpress-vpc.id
+  security_groups             = [aws_security_group.allow_ssh.id]
+  associate_public_ip_address = true
+  user_data = <<EOF
+#!/bin/bash
+dnf update -y
+# install httpd
+dnf install httpd -y
+echo "<h1>Hello World!</h1>" > /var/www/html/index.html
+chown -R apache:apache /var/www/html/
+systemctl start httpd
+systemctl enable httpd
+# install mariadb
+dnf install mariadb105 -y
+EOF
+}
+
