@@ -261,9 +261,9 @@ resource "aws_launch_template" "me_ec2_launch_templ" {
 resource "aws_autoscaling_group" "autoscale" {
   name                  = "test-autoscaling-group"  
   #availability_zones    = ["eu-north-1"]
-  desired_capacity      = 2
+  desired_capacity      = 3
   max_size              = 5
-  min_size              = 3
+  min_size              = 2
   health_check_type     = "EC2"
   termination_policies  = ["OldestInstance"]
   
