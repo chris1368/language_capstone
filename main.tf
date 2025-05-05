@@ -232,7 +232,7 @@ resource "aws_lb_listener" "me_front_end" {
 
 data "template_file" "start_userdata" {
 
-  template <<EOF
+  template = <<EOF
 #!/bin/bash
 dnf update -y
 # install httpd
