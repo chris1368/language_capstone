@@ -93,7 +93,7 @@ resource "aws_nat_gateway" "nat" {
 
 #public route table
 resource "aws_route_table" "public" {
-  vpc_id = aws_vpc.this.id
+  vpc_id = aws_vpc.wordpress-vpc.id
 
   route {
     cidr_block = "0.0.0.0/0"
@@ -107,7 +107,7 @@ resource "aws_route_table" "public" {
 
 #private route table
 resource "aws_route_table" "private" {
-  vpc_id = aws_vpc.this.id
+  vpc_id = aws_vpc.wordpress-vpc.id
 
   route {
     cidr_block     = "0.0.0.0/0"
