@@ -196,3 +196,75 @@ dnf install mariadb105 -y
 EOF
 }
 
+
+#Load balancer
+resource "aws_lb" "me_lb" {
+  name               = "me-lb-"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.allow_ssh.id]
+  subnets            = [aws_subnet.public1.id, aws_subnet.public2.id]
+  depends_on         = [aws_internet_gateway.igw]
+}
+
+resource "aws_lb_target_group" "me_alb_tg" {
+  name     = "sh-tf-lb-alb-tg"
+  port     = 80
+  protocol = "HTTP"
+  vpc_id   = aws_vpc.wordpress-vpc.id
+}
+
+resource "aws_lb_listener" "me_front_end" {
+  load_balancer_arn = aws_lb.me_lb.arn
+  port              = "80"
+  protocol          = "HTTP"
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.me_alb_tg.arn
+  }
+}
+
+
+#######
+
+
+# ASG with Launch template
+resource "aws_launch_template" "me_ec2_launch_templ" {
+  name_prefix   = "me_ec2_launch_templ"
+  image_id      = "ami-0dd574ef87b79ac6c" # To note: AMI is specific for each region
+  instance_type = "t3.nano"
+  user_data     = <<EOF
+#!/bin/bash
+dnf update -y
+# install httpd
+dnf install httpd -y
+echo "<h1>Hello World!</h1>" > /var/www/html/index.html
+chown -R apache:apache /var/www/html/
+systemctl start httpd
+systemctl enable httpd
+# install mariadb
+dnf install mariadb105 -y
+EOF
+}
+
+resource "aws_autoscaling_group" "autoscale" {
+  name                  = "test-autoscaling-group"  
+  availability_zones    = ["eu-north-1"]
+  desired_capacity      = 2
+  max_size              = 5
+  min_size              = 3
+  health_check_type     = "EC2"
+  termination_policies  = ["OldestInstance"]
+  
+# Connect to the target group
+  target_group_arns = [aws_lb_target_group.me_alb_tg.arn]
+
+  vpc_zone_identifier   =  [# Creating EC2 instances in private subnet
+    aws_subnet.public2.id
+  ]
+
+  launch_template {
+    id      = aws_launch_template.me_ec2_launch_templ.id
+    version = "$Latest"
+  }
+}
