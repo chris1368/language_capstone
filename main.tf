@@ -199,7 +199,7 @@ EOF
 
 #Load balancer
 resource "aws_lb" "me_lb" {
-  name               = "me-lb-"
+  name               = "me-lb"
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.allow_ssh.id]
@@ -249,7 +249,7 @@ EOF
 
 resource "aws_autoscaling_group" "autoscale" {
   name                  = "test-autoscaling-group"  
-  availability_zones    = ["eu-north-1"]
+  #availability_zones    = ["eu-north-1"]
   desired_capacity      = 2
   max_size              = 5
   min_size              = 3
