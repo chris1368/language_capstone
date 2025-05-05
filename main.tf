@@ -16,7 +16,7 @@ terraform {
 
 resource "aws_vpc" "wordpress-vpc" {
 
-  cidr_block = "10.0.0.0/18"
+  cidr_block = "10.100.0.0/16"
 
    tags = {
     Name = "wordpress_vpc"
@@ -28,7 +28,7 @@ resource "aws_vpc" "wordpress-vpc" {
 
 resource "aws_subnet" "public1" {
   vpc_id     = aws_vpc.wordpress-vpc.id
-  cidr_block = "10.0.1.0/24"
+  cidr_block = "10.100.1.0/24"
   availability_zone = "eu-north-1a"
 
    tags = {
