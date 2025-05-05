@@ -228,12 +228,11 @@ resource "aws_lb_listener" "me_front_end" {
 #######
 
 
-# ASG with Launch template
-resource "aws_launch_template" "me_ec2_launch_templ" {
-  name_prefix   = "me_ec2_launch_templ"
-  image_id      = "ami-0dd574ef87b79ac6c" # To note: AMI is specific for each region
-  instance_type = "t3.nano"
-  user_data     = <<EOF
+
+
+data "template_file" "start_userdata" {
+
+  template <<EOF
 #!/bin/bash
 dnf update -y
 # install httpd
@@ -245,6 +244,18 @@ systemctl enable httpd
 # install mariadb
 dnf install mariadb105 -y
 EOF
+
+}
+
+
+
+
+# ASG with Launch template
+resource "aws_launch_template" "me_ec2_launch_templ" {
+  name_prefix   = "me_ec2_launch_templ"
+  image_id      = "ami-0dd574ef87b79ac6c" # To note: AMI is specific for each region
+  instance_type = "t3.nano"
+  user_data     =  "${base64encode(data.template_file.start_userdata.rendered)}"
 }
 
 resource "aws_autoscaling_group" "autoscale" {
