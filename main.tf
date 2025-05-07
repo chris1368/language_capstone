@@ -295,7 +295,7 @@ resource "aws_db_instance" "rds_instance" {
   engine_version            = "5.7"
   skip_final_snapshot       = true
   final_snapshot_identifier = "my-final-snapshot"
-  instance_class            = "db.t2.micro"
+  instance_class            = "db.t3.micro"
   allocated_storage         = 20
   identifier                = "my-rds-instance"
   db_name                   = "wordpress_db"
