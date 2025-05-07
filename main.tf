@@ -178,7 +178,7 @@ resource "aws_security_group" "allow_ssh" {
 resource "aws_instance" "wordpress" {
   ami                         = "ami-0dd574ef87b79ac6c"
   instance_type               = "t3.nano"
-  key_name                    = "vockey2" #aws_key_pair.deployer.key_name
+  key_name                    = "vockey1" #aws_key_pair.deployer.key_name
   subnet_id                   = aws_subnet.public1.id
   security_groups             = [aws_security_group.allow_ssh.id]
   associate_public_ip_address = true
@@ -277,5 +277,51 @@ resource "aws_autoscaling_group" "autoscale" {
   launch_template {
     id      = aws_launch_template.me_ec2_launch_templ.id
     version = "$Latest"
+  }
+}
+
+
+########
+
+
+#rds subnet
+resource "aws_db_subnet_group" "rds_subnet_group" {
+  name       = "rds-subnet-group"
+  subnet_ids = [aws_subnet.private1.id, aws_subnet.private2.id]
+}
+#RDS INSTANCE
+resource "aws_db_instance" "rds_instance" {
+  engine                    = "mysql"
+  engine_version            = "5.7"
+  skip_final_snapshot       = true
+  final_snapshot_identifier = "my-final-snapshot"
+  instance_class            = "db.t2.micro"
+  allocated_storage         = 20
+  identifier                = "my-rds-instance"
+  db_name                   = "wordpress_db"
+  username                  = "test"
+  password                  = "test123$"
+  db_subnet_group_name      = aws_db_subnet_group.rds_subnet_group.name
+  vpc_security_group_ids    = [aws_security_group.rds_security_group.id]
+
+  tags = {
+    Name = "RDS Instance"
+  }
+}
+# RDS security group
+resource "aws_security_group" "rds_security_group" {
+  name        = "rds-security-group"
+  description = "Security group for RDS instance"
+  vpc_id      = aws_vpc.wordpress-vpc.id
+
+  ingress {
+    from_port   = 3306
+    to_port     = 3306
+    protocol    = "tcp"
+    cidr_blocks = ["10.100.0.0/16"]
+  }
+
+  tags = {
+    Name = "RDS Security Group"
   }
 }
