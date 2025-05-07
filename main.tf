@@ -257,11 +257,11 @@ resource "aws_launch_template" "me_ec2_launch_templ" {
   instance_type = "t3.nano"
   user_data     =  "${base64encode(data.template_file.start_userdata.rendered)}"
 
-  #  network_interfaces {
-  #  associate_public_ip_address = true
-  #  #subnet_id                   = [aws_security_group.allow_ssh.id]
-  #  security_groups             = [aws_security_group.allow_ssh.id]
-  #}
+    network_interfaces {
+    associate_public_ip_address = true
+    #subnet_id                   = [aws_security_group.allow_ssh.id]
+    security_groups             = [aws_security_group.allow_ssh.id]
+  }
 }
 
 resource "aws_autoscaling_group" "autoscale" {
