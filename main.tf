@@ -290,9 +290,8 @@ resource "aws_autoscaling_group" "autoscale" {
 ########
 
 
-#rds subnet
 resource "aws_db_subnet_group" "rds_subnet_group" {
-  name       = "rds-subnet-group"
+  name       = "rds-subnet-group-new" # <-- change this name
   subnet_ids = [aws_subnet.private1.id, aws_subnet.private2.id]
 }
 #RDS INSTANCE
