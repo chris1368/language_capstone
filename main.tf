@@ -175,26 +175,26 @@ resource "aws_security_group" "allow_ssh" {
 
 
 #EC2
-resource "aws_instance" "wordpress" {
-  ami                         = "ami-0dd574ef87b79ac6c"
-  instance_type               = "t3.nano"
-  key_name                    = "vockey1" #aws_key_pair.deployer.key_name
-  subnet_id                   = aws_subnet.public1.id
-  security_groups             = [aws_security_group.allow_ssh.id]
-  associate_public_ip_address = true
-  user_data = <<EOF
-#!/bin/bash
-dnf update -y
-# install httpd
-dnf install httpd -y
-echo "<h1>Hello World!</h1>" > /var/www/html/index.html
-chown -R apache:apache /var/www/html/
-systemctl start httpd
-systemctl enable httpd
-# install mariadb
-dnf install mariadb105 -y
-EOF
-}
+#resource "aws_instance" "wordpress" {
+#  ami                         = "ami-0dd574ef87b79ac6c"
+#  instance_type               = "t3.nano"
+#  key_name                    = "vockey1" #aws_key_pair.deployer.key_name
+#  subnet_id                   = aws_subnet.public1.id
+#  security_groups             = [aws_security_group.allow_ssh.id]
+#  associate_public_ip_address = true
+#  user_data = <<EOF
+##!/bin/bash
+#dnf update -y
+## install httpd
+#dnf install httpd -y
+#echo "<h1>Hello World!</h1>" > /var/www/html/index.html
+#chown -R apache:apache /var/www/html/
+#systemctl start httpd
+#systemctl enable httpd
+## install mariadb
+#dnf install mariadb105 -y
+#EOF
+#}
 
 
 #Load balancer
@@ -255,14 +255,17 @@ resource "aws_launch_template" "me_ec2_launch_templ" {
   name_prefix   = "me_ec2_launch_templ"
   image_id      = "ami-0dd574ef87b79ac6c" # To note: AMI is specific for each region
   instance_type = "t3.nano"
+  key_name                    = "vockey1"
+  associate_public_ip_address = true
+  security_groups             = [aws_security_group.allow_ssh.id]
   user_data     =  "${base64encode(data.template_file.start_userdata.rendered)}"
 }
 
 resource "aws_autoscaling_group" "autoscale" {
   name                  = "test-autoscaling-group"  
   #availability_zones    = ["eu-north-1"]
-  desired_capacity      = 3
-  max_size              = 5
+  desired_capacity      = 2
+  max_size              = 4
   min_size              = 2
   health_check_type     = "EC2"
   termination_policies  = ["OldestInstance"]
