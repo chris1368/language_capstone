@@ -255,8 +255,6 @@ resource "aws_launch_template" "me_ec2_launch_templ" {
   name_prefix   = "me_ec2_launch_templ"
   image_id      = "ami-0dd574ef87b79ac6c" # To note: AMI is specific for each region
   instance_type = "t3.nano"
-  associate_public_ip_address = true
-  security_groups             = [aws_security_group.allow_ssh.id]
   user_data     =  "${base64encode(data.template_file.start_userdata.rendered)}"
 
     network_interfaces {
