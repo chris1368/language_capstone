@@ -190,7 +190,8 @@ resource "aws_security_group" "allow_ssh" {
 
 data "template_file" "start_userdata" {
 
-  template = #!/bin/bash
+  template = <<EOF
+  #!/bin/bash
 
 # Update system packages
 sudo yum update -y
@@ -204,6 +205,7 @@ sudo systemctl enable httpd
 sudo yum install mariadb105-server -y
 sudo systemctl start mariadb
 sudo systemctl enable mariadb
+EOF
 
 # Automate mysql_secure_installation (not the best solution)
 expect <<EOF
