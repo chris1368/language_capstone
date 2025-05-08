@@ -77,8 +77,23 @@ resource "aws_internet_gateway" "igw" {
 }
 
 #elastic ip
-resource "aws_eip" "eip" {
-  domain = "vpc"
+resource "aws_eip" "eip_wordpress" {
+  instance = aws_instance.wordpress.id
+  #domain = "vpc"
+  vpc      = true
+    tags = {
+    Name = "WordPress Server 1 EIP"
+  }
+}
+
+#elastic ip 2
+resource "aws_eip" "eip_wordpress2" {
+  instance = aws_instance.wordpress2.id
+  #domain = "vpc"
+  vpc      = true
+    tags = {
+    Name = "WordPress Server 2 EIP"
+  }
 }
 
 #nat gateway
@@ -173,8 +188,90 @@ resource "aws_security_group" "allow_ssh" {
   }
 }
 
+data "template_file" "start_userdata" {
 
-#EC2
+  template = #!/bin/bash
+
+# Update system packages
+sudo yum update -y
+
+# Install httpd (webserver), start and enable it
+sudo yum install httpd -y
+sudo systemctl start httpd
+sudo systemctl enable httpd
+
+# Install MariaDB, start and enable it
+sudo yum install mariadb105-server -y
+sudo systemctl start mariadb
+sudo systemctl enable mariadb
+
+# Automate mysql_secure_installation (not the best solution)
+expect <<EOF
+spawn mysql_secure_installation
+expect "Enter current password for root (enter for none):"
+send "\n"
+expect "Set root password? [Y/n]"
+send "Y\n"
+expect "New password:"
+send "root\n"  # Set your desired root password here
+expect "Re-enter new password:"
+send "root\n"  # Re-enter the root password
+expect "Remove anonymous users? [Y/n]"
+send "Y\n"
+expect "Disallow root login remotely? [Y/n]"
+send "Y\n"
+expect "Remove test database and access to it? [Y/n]"
+send "Y\n"
+expect "Reload privilege tables now? [Y/n]"
+send "Y\n"
+expect eof
+EOF
+
+# Log in to mariadb and create WordPress database and user
+mysql -u root -proot <<MYSQL_SCRIPT
+CREATE DATABASE wordpress;
+CREATE USER 'wp_user'@'localhost' IDENTIFIED BY 'admin123';  # Replace with actual password
+GRANT ALL PRIVILEGES ON wordpress.* TO 'wp_user'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
+MYSQL_SCRIPT
+
+# Install PHP and all necessary modules
+sudo yum install php php-mysqlnd php-fpm php-xml php-mbstring -y
+sudo systemctl restart httpd
+
+# Download and extract WordPress
+wget https://wordpress.org/latest.tar.gz
+tar -xvzf latest.tar.gz
+
+# Move WordPress files to the Apache web directory
+sudo mv wordpress/* /var/www/html/
+
+# Set correct ownership and permissions
+sudo chown -R apache:apache /var/www/html/*
+sudo chmod -R 755 /var/www/html/*
+
+# Create wp-config.php file
+cd /var/www/html
+sudo cp wp-config-sample.php wp-config.php
+
+# Automate wp-config.php with database credentials
+sudo sed -i "s/define( 'DB_NAME', 'database_name_here' );/define( 'DB_NAME', 'wordpress' );/" wp-config.php
+sudo sed -i "s/define( 'DB_USER', 'username_here' );/define( 'DB_USER', 'wp_user' );/" wp-config.php
+sudo sed -i "s/define( 'DB_PASSWORD', 'password_here' );/define( 'DB_PASSWORD', 'admin123' );/" wp-config.php
+
+# Set permissions for wp-config.php
+sudo chmod 644 wp-config.php
+
+# Restart Apache to ensure everything is loaded
+sudo systemctl restart httpd
+
+echo "WordPress installation is complete!" # just print a message
+
+}
+
+
+#EC2  first wordpress server
 resource "aws_instance" "wordpress" {
   ami                         = "ami-0dd574ef87b79ac6c"
   instance_type               = "t3.nano"
@@ -182,18 +279,28 @@ resource "aws_instance" "wordpress" {
   subnet_id                   = aws_subnet.public1.id
   security_groups             = [aws_security_group.allow_ssh.id]
   associate_public_ip_address = true
-  user_data = <<EOF
-#!/bin/bash
-dnf update -y
-# install httpd
-dnf install httpd -y
-echo "<h1>Hello World!</h1>" > /var/www/html/index.html
-chown -R apache:apache /var/www/html/
-systemctl start httpd
-systemctl enable httpd
-# install mariadb
-dnf install mariadb105 -y
-EOF
+  user_data = "${base64encode(data.template_file.start_userdata.rendered)}"
+  tags = {
+    Name = "WordPress Server 1"
+  }
+
+  depends_on = [aws_db_instance.wordpress]
+}
+
+#EC2  second wordpress server
+resource "aws_instance" "wordpress2" {
+  ami                         = "ami-0dd574ef87b79ac6c"
+  instance_type               = "t3.nano"
+  key_name                    = "vockey1" #aws_key_pair.deployer.key_name
+  subnet_id                   = aws_subnet.public2.id
+  security_groups             = [aws_security_group.allow_ssh.id]
+  associate_public_ip_address = true
+  user_data = "${base64encode(data.template_file.start_userdata.rendered)}"
+  tags = {
+    Name = "WordPress Server 2"
+  }
+
+  depends_on = [aws_db_instance.wordpress]
 }
 
 
@@ -224,28 +331,20 @@ resource "aws_lb_listener" "me_front_end" {
   }
 }
 
+# Attach EC2 instances to target group
+resource "aws_lb_target_group_attachment" "wordpress_1" {
+  target_group_arn = aws_lb_target_group.me_alb_tg.arn
+  target_id        = aws_instance.wordpress.id
+  port             = 80
+}
+
+resource "aws_lb_target_group_attachment" "wordpress_2" {
+  target_group_arn = aws_lb_target_group.me_alb_tg.arn
+  target_id        = aws_instance.wordpress2.id
+  port             = 80
+}
 
 #######
-
-
-
-
-data "template_file" "start_userdata" {
-
-  template = <<EOF
-#!/bin/bash
-dnf update -y
-# install httpd
-dnf install httpd -y
-echo "<h1>Hello World!</h1>" > /var/www/html/index.html
-chown -R apache:apache /var/www/html/
-systemctl start httpd
-systemctl enable httpd
-# install mariadb
-dnf install mariadb105 -y
-EOF
-
-}
 
 
 
@@ -295,7 +394,7 @@ resource "aws_db_subnet_group" "rds_subnet_group" {
   subnet_ids = [aws_subnet.private1.id, aws_subnet.private2.id]
 }
 #RDS INSTANCE
-resource "aws_db_instance" "rds_instance" {
+resource "aws_db_instance" "wordpress" {
   engine                    = "mysql"
   engine_version            = "5.7"
   skip_final_snapshot       = true
@@ -324,6 +423,14 @@ resource "aws_security_group" "rds_security_group" {
     to_port     = 3306
     protocol    = "tcp"
     cidr_blocks = ["10.100.0.0/16"]
+    #security_groups = [aws_security_group.allow_ssh.id]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   tags = {
