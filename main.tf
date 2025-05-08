@@ -77,23 +77,28 @@ resource "aws_internet_gateway" "igw" {
 }
 
 #elastic ip
-resource "aws_eip" "eip_wordpress" {
-  instance = aws_instance.wordpress.id
-  #domain = "vpc"
-  vpc      = true
-    tags = {
-    Name = "WordPress Server 1 EIP"
-  }
-}
+#resource "aws_eip" "eip_wordpress" {
+#  instance = aws_instance.wordpress.id
+#  domain = "vpc"
+#  #vpc      = true
+#    tags = {
+#    Name = "WordPress Server 1 EIP"
+#  }
+#}
 
 #elastic ip 2
-resource "aws_eip" "eip_wordpress2" {
-  instance = aws_instance.wordpress2.id
-  #domain = "vpc"
-  vpc      = true
-    tags = {
-    Name = "WordPress Server 2 EIP"
-  }
+#resource "aws_eip" "eip_wordpress2" {
+#  instance = aws_instance.wordpress2.id
+#  domain = "vpc"
+#  #vpc      = true
+#    tags = {
+#    Name = "WordPress Server 2 EIP"
+#  }
+#}
+
+#elastic ip
+resource "aws_eip" "eip" {
+  domain = "vpc"
 }
 
 #nat gateway
