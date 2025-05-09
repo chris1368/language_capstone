@@ -273,7 +273,7 @@ data "template_file" "start_userdata" {
   EOF
 
   vars = {
-    rds_endpoint = aws_db_instance.wordpress.endpoint
+    rds_endpoint = aws_db_instance.wordpress.address
   }
 
 
