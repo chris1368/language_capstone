@@ -200,101 +200,53 @@ data "template_file" "start_userdata" {
   # Update system packages
   sudo yum update -y
 
-  # Install httpd (webserver), start and enable it
+  # Install Apache (httpd)
   sudo yum install httpd -y
   sudo systemctl start httpd
   sudo systemctl enable httpd
 
-  # Install MariaDB, start and enable it
-  sudo yum install mariadb105-server -y
-  sudo systemctl start mariadb
-  sudo systemctl enable mariadb
+  # Install PHP and required extensions
+  sudo amazon-linux-extras enable php7.4
+  sudo yum clean metadata
+  sudo yum install php php-mysqlnd php-fpm php-xml php-mbstring wget unzip -y
 
-  # Automate mysql_secure_installation (not the best solution)
-  expect <<'EXP_EOF'
-  spawn mysql_secure_installation
-  expect "Enter current password for root (enter for none):"
-  send "\\n"
-  expect "Set root password? [Y/n]"
-  send "Y\\n"
-  expect "New password:"
-  send "root\\n"  # Set your desired root password here
-  expect "Re-enter new password:"
-  send "root\\n"  # Re-enter the root password
-  expect "Remove anonymous users? [Y/n]"
-  send "Y\\n"
-  expect "Disallow root login remotely? [Y/n]"
-  send "Y\\n"
-  expect "Remove test database and access to it? [Y/n]"
-  send "Y\\n"
-  expect "Reload privilege tables now? [Y/n]"
-  send "Y\\n"
-  expect eof
-  EXP_EOF
-
-  # Log in to mariadb and create WordPress database and user
-  mysql -u root -proot <<MYSQL_SCRIPT
-  CREATE DATABASE wordpress;
-  CREATE USER 'wp_user'@'localhost' IDENTIFIED BY 'admin123';  # Replace with actual password
-  GRANT ALL PRIVILEGES ON wordpress.* TO 'wp_user'@'localhost';
-  FLUSH PRIVILEGES;
-  EXIT;
-  MYSQL_SCRIPT
-
-  # Install PHP and all necessary modules
-  sudo yum install php php-mysqlnd php-fpm php-xml php-mbstring -y
+  # Restart Apache
   sudo systemctl restart httpd
-
-# Retrieve RDS endpoint from Terraform output
-DBName=${rds_db_name}
-DBUser=${rds_username}
-DBPassword=${rds_password}
-RDS_ENDPOINT=${rds_endpoint}
-
-# Create a temporary file to store the database value
-sudo touch db.txt
-sudo chmod 777 db.txt
-sudo echo "DATABASE $DBName;" >> db.txt
-sudo echo "USER $DBUser;" >> db.txt
-sudo echo "PASSWORD $DBPassword;" >> db.txt
-sudo echo "HOST $RDS_ENDPOINT;" >> db.txt
-
 
   # Download and extract WordPress
   wget https://wordpress.org/latest.tar.gz
-  tar -xvzf latest.tar.gz
+  tar -xzf latest.tar.gz
 
-  # Move WordPress files to the Apache web directory
+  # Move WordPress files to web directory
   sudo mv wordpress/* /var/www/html/
 
-  # Set correct ownership and permissions
-  sudo chown -R apache:apache /var/www/html/*
-  sudo chmod -R 755 /var/www/html/*
+  # Set permissions
+  sudo chown -R apache:apache /var/www/html/
+  sudo chmod -R 755 /var/www/html/
 
-  # Create wp-config.php file
+  # Configure wp-config.php
   cd /var/www/html
   sudo cp wp-config-sample.php wp-config.php
 
+  # Set database credentials
+  sudo sed -i "s/database_name_here/wordpress_db/" wp-config.php
+  sudo sed -i "s/username_here/test/" wp-config.php
+  sudo sed -i "s/password_here/test123$/" wp-config.php
+  sudo sed -i "s/localhost/${rds_endpoint}/" wp-config.php
 
-  echo "Terraform output:"
-
-
-  # Copy wp-config.php file to wordpress directory
-sudo cp ./wp-config-sample.php ./wp-config.php
-sudo sed -i "s/'database_name_here'/'$DBName'/g" wp-config.php
-sudo sed -i "s/'username_here'/'$DBUser'/g" wp-config.php
-sudo sed -i "s/'password_here'/'$DBPassword'/g" wp-config.php
-sudo sed -i "s/'localhost'/'$RDS_ENDPOINT'/g" wp-config.php
-
-  # Set permissions for wp-config.php
   sudo chmod 644 wp-config.php
 
-  # Restart Apache to ensure everything is loaded
+  # Final restart
   sudo systemctl restart httpd
 
-  echo "WordPress installation is complete!" # just print a message
+  echo "WordPress setup with RDS completed!"
   EOF
+
+  vars = {
+    rds_endpoint = aws_db_instance.wordpress.endpoint
+  }
 }
+
 
 
 
@@ -439,41 +391,6 @@ resource "aws_db_instance" "wordpress" {
     Name = "RDS Instance"
   }
 }
-
-
-# Variables for RDS DB instance
-
-variable "rds_username" {
-  description = "The username for the RDS instance"
-  type        = string
-  default     = "wp_user"
-}
-variable "rds_password" {
-  description = "The password for the RDS instance"
-  type        = string
-  default="admin123"
-  sensitive   = true
-}
-variable "rds_db_name" {
-  description = "The name of the database"
-  default     = "wordpressDb"
-}
-
-#Get Database name, username, password, endpoint from above RDS
-output "rds_db_name" {
-  value = data.aws_db_instance.mysql_data.db_name
-}
-output "rds_username" {
-  value = var.rds_username
-}
-output "rds_passwordword" {
-  value     = var.rds_password
-  sensitive = true
-}
-output "rds_endpoint" {
-  value = data.aws_db_instance.mysql_data.endpoint
-}
-
 # RDS security group
 resource "aws_security_group" "rds_security_group" {
   name        = "rds-security-group"
