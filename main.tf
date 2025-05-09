@@ -455,7 +455,20 @@ variable "rds_db_name" {
   default     = "wordpressDb"
 }
 
-
+#Get Database name, username, password, endpoint from above RDS
+output "rds_db_name" {
+  value = data.aws_db_instance.mysql_data.db_name
+}
+output "rds_username" {
+  value = var.rds_username
+}
+output "rds_passwordword" {
+  value     = var.rds_password
+  sensitive = true
+}
+output "rds_endpoint" {
+  value = data.aws_db_instance.mysql_data.endpoint
+}
 
 # RDS security group
 resource "aws_security_group" "rds_security_group" {
