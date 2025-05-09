@@ -439,6 +439,24 @@ resource "aws_db_instance" "wordpress" {
     Name = "RDS Instance"
   }
 }
+
+
+# Variables for RDS DB instance
+
+variable "rds_username" {
+  description = "The username for the RDS instance"
+}
+variable "rds_password" {
+  description = "The password for the RDS instance"
+  sensitive   = true
+}
+variable "rds_db_name" {
+  description = "The name of the database"
+  default     = "wordpressDb"
+}
+
+
+
 # RDS security group
 resource "aws_security_group" "rds_security_group" {
   name        = "rds-security-group"
