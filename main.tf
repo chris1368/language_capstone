@@ -245,13 +245,65 @@ data "template_file" "start_userdata" {
   vars = {
     rds_endpoint = aws_db_instance.wordpress.endpoint
   }
+
+
+}
+
+resource "aws_db_subnet_group" "rds_subnet_group" {
+  name       = "rds-subnet-group-new" # <-- change this name
+  subnet_ids = [aws_subnet.private1.id, aws_subnet.private2.id]
+}
+#RDS INSTANCE
+resource "aws_db_instance" "wordpress" {
+  engine                    = "mysql"
+  engine_version            = "5.7"
+  skip_final_snapshot       = true
+  final_snapshot_identifier = "my-final-snapshot"
+  instance_class            = "db.t3.micro"
+  allocated_storage         = 20
+  identifier                = "my-rds-instance"
+  db_name                   = "wordpress_db"
+  username                  = "test"
+  password                  = "test123$"
+  db_subnet_group_name      = aws_db_subnet_group.rds_subnet_group.name
+  vpc_security_group_ids    = [aws_security_group.rds_security_group.id]
+
+  tags = {
+    Name = "RDS Instance"
+  }
+}
+# RDS security group
+resource "aws_security_group" "rds_security_group" {
+  name        = "rds-security-group"
+  description = "Security group for RDS instance"
+  vpc_id      = aws_vpc.wordpress-vpc.id
+
+  ingress {
+    from_port   = 3306
+    to_port     = 3306
+    protocol    = "tcp"
+    cidr_blocks = ["10.100.0.0/16"]
+    #security_groups = [aws_security_group.allow_ssh.id]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "RDS Security Group"
+  }
+}
+
+
+
  output "rds_endpoint" {
   description = "The endpoint of the RDS instance"
   value       = aws_db_instance.wordpress.endpoint
 }
-
-}
-
 
 
 
@@ -373,51 +425,3 @@ resource "aws_autoscaling_group" "autoscale" {
 ########
 
 
-resource "aws_db_subnet_group" "rds_subnet_group" {
-  name       = "rds-subnet-group-new" # <-- change this name
-  subnet_ids = [aws_subnet.private1.id, aws_subnet.private2.id]
-}
-#RDS INSTANCE
-resource "aws_db_instance" "wordpress" {
-  engine                    = "mysql"
-  engine_version            = "5.7"
-  skip_final_snapshot       = true
-  final_snapshot_identifier = "my-final-snapshot"
-  instance_class            = "db.t3.micro"
-  allocated_storage         = 20
-  identifier                = "my-rds-instance"
-  db_name                   = "wordpress_db"
-  username                  = "test"
-  password                  = "test123$"
-  db_subnet_group_name      = aws_db_subnet_group.rds_subnet_group.name
-  vpc_security_group_ids    = [aws_security_group.rds_security_group.id]
-
-  tags = {
-    Name = "RDS Instance"
-  }
-}
-# RDS security group
-resource "aws_security_group" "rds_security_group" {
-  name        = "rds-security-group"
-  description = "Security group for RDS instance"
-  vpc_id      = aws_vpc.wordpress-vpc.id
-
-  ingress {
-    from_port   = 3306
-    to_port     = 3306
-    protocol    = "tcp"
-    cidr_blocks = ["10.100.0.0/16"]
-    #security_groups = [aws_security_group.allow_ssh.id]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "RDS Security Group"
-  }
-}
