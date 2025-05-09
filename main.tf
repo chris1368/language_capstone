@@ -232,7 +232,7 @@ data "template_file" "start_userdata" {
   sudo sed -i "s/database_name_here/wordpress_db/" wp-config.php
   sudo sed -i "s/username_here/test/" wp-config.php
   sudo sed -i "s/password_here/test123$/" wp-config.php
-  sudo sed -i "s/define( 'DB_HOST', 'localhost' );/define( 'DB_HOST', '$(aws rds describe-db-instances --query \"DBInstances[0].Endpoint.Address\" --output text)' );/" wp-config.php
+  sudo sed -i "s/localhost/${rds_endpoint}/" wp-config.php
 
   sudo chmod 644 wp-config.php
 
@@ -245,6 +245,11 @@ data "template_file" "start_userdata" {
   vars = {
     rds_endpoint = aws_db_instance.wordpress.endpoint
   }
+ output "rds_endpoint" {
+  description = "The endpoint of the RDS instance"
+  value       = aws_db_instance.wordpress.endpoint
+}
+
 }
 
 
