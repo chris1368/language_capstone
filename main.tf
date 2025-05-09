@@ -245,6 +245,21 @@ data "template_file" "start_userdata" {
   sudo yum install php php-mysqlnd php-fpm php-xml php-mbstring -y
   sudo systemctl restart httpd
 
+# Retrieve RDS endpoint from Terraform output
+DBName=${rds_db_name}
+DBUser=${rds_username}
+DBPassword=${rds_password}
+RDS_ENDPOINT=${rds_endpoint}
+
+# Create a temporary file to store the database value
+sudo touch db.txt
+sudo chmod 777 db.txt
+sudo echo "DATABASE $DBName;" >> db.txt
+sudo echo "USER $DBUser;" >> db.txt
+sudo echo "PASSWORD $DBPassword;" >> db.txt
+sudo echo "HOST $RDS_ENDPOINT;" >> db.txt
+
+
   # Download and extract WordPress
   wget https://wordpress.org/latest.tar.gz
   tar -xvzf latest.tar.gz
@@ -260,10 +275,16 @@ data "template_file" "start_userdata" {
   cd /var/www/html
   sudo cp wp-config-sample.php wp-config.php
 
-  # Automate wp-config.php with database credentials
-  sudo sed -i "s/define( 'DB_NAME', 'database_name_here' );/define( 'DB_NAME', 'wordpress' );/" wp-config.php
-  sudo sed -i "s/define( 'DB_USER', 'username_here' );/define( 'DB_USER', 'wp_user' );/" wp-config.php
-  sudo sed -i "s/define( 'DB_PASSWORD', 'password_here' );/define( 'DB_PASSWORD', 'admin123' );/" wp-config.php
+
+  echo "Terraform output:"
+
+
+  # Copy wp-config.php file to wordpress directory
+sudo cp ./wp-config-sample.php ./wp-config.php
+sudo sed -i "s/'database_name_here'/'$DBName'/g" wp-config.php
+sudo sed -i "s/'username_here'/'$DBUser'/g" wp-config.php
+sudo sed -i "s/'password_here'/'$DBPassword'/g" wp-config.php
+sudo sed -i "s/'localhost'/'$RDS_ENDPOINT'/g" wp-config.php
 
   # Set permissions for wp-config.php
   sudo chmod 644 wp-config.php
