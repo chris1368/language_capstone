@@ -445,9 +445,13 @@ resource "aws_db_instance" "wordpress" {
 
 variable "rds_username" {
   description = "The username for the RDS instance"
+  type        = string
+  default     = "wp_user"
 }
 variable "rds_password" {
   description = "The password for the RDS instance"
+  type        = string
+  default="admin123"
   sensitive   = true
 }
 variable "rds_db_name" {
