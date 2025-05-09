@@ -218,6 +218,11 @@ resource "aws_db_instance" "wordpress" {
   }
 }
 
+ output "rds_endpoint" {
+  description = "The endpoint of the RDS instance"
+  value       = aws_db_instance.wordpress.endpoint
+}
+
 data "template_file" "start_userdata" {
   template = <<-EOF
   #!/bin/bash
@@ -303,10 +308,7 @@ resource "aws_security_group" "rds_security_group" {
 
 
 
- output "rds_endpoint" {
-  description = "The endpoint of the RDS instance"
-  value       = aws_db_instance.wordpress.endpoint
-}
+
 
 
 
