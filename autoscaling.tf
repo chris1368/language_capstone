@@ -24,8 +24,8 @@ resource "aws_autoscaling_group" "autoscale" {
 # Connect to the target group
   target_group_arns = [aws_lb_target_group.me_alb_tg.arn]
 
-  vpc_zone_identifier   =  [# Creating EC2 instances in private subnet
-    aws_subnet.public2.id
+  vpc_zone_identifier   =  [
+    aws_subnet.public1.id, aws_subnet.public2.id
   ]
 
   launch_template {
