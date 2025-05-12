@@ -1,5 +1,5 @@
 resource "aws_db_subnet_group" "rds_subnet_group" {
-  name       = "rds-subnet-group-new" # <-- change this name
+  name       = "rds-subnet-group-new_1" # <-- change this name
   subnet_ids = [aws_subnet.private1.id, aws_subnet.private2.id]
 }
 #RDS INSTANCE

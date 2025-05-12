@@ -32,7 +32,7 @@ resource "aws_instance" "wordpress" {
   subnet_id                   = aws_subnet.public1.id
   security_groups             = [aws_security_group.allow_ssh.id]
   associate_public_ip_address = true
-  user_data = base64encode(data.template_file.init.rendered)
+  user_data = data.template_file.init.rendered
   tags = {
     Name = "WordPress Server 1"
   }
@@ -48,7 +48,7 @@ resource "aws_instance" "wordpress2" {
   subnet_id                   = aws_subnet.public2.id
   security_groups             = [aws_security_group.allow_ssh.id]
   associate_public_ip_address = true
-  user_data = base64encode(data.template_file.init.rendered)
+  user_data = data.template_file.init.rendered
   tags = {
     Name = "WordPress Server 2"
   }
