@@ -37,3 +37,9 @@ resource "aws_lb_target_group_attachment" "wordpress_2" {
   target_id        = aws_instance.wordpress2.id
   port             = 80
 }
+
+resource "aws_autoscaling_attachment" "name" {
+  autoscaling_group_name = aws_autoscaling_group.autoscale.id
+  lb_target_group_arn   = aws_lb_target_group.me_alb_tg.arn
+  
+}
